@@ -1,0 +1,9 @@
+@font-face {
+    font-family: 'Neiko';
+    src: url('Neiko-Regular.woff2') format('woff2'),
+        url('Neiko-Regular.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
