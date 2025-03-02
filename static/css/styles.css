@@ -1,0 +1,134 @@
+@font-face {
+    font-family: 'Neiko';
+    src: url('/font/Neiko-Regular.woff2') format('woff2'),
+        url('/font/Neiko-Regular.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+html{
+    font-family: 'Neiko', sans-serif;
+    background-color: black;
+    margin: 40px;
+}
+
+h2{
+    color: white;
+    font-size: 20px;
+    margin-bottom: 100px;
+}
+
+h3{
+    color: white;
+    text-align: center;
+    font-size: 25px;
+}
+
+p{
+    color: white;
+    text-align: center;
+    font-size: 25px;
+}
+
+.sharebutt {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+}
+
+.button-19 {
+    font-family: "Neiko", sans-serif;
+    appearance: button;
+    background-color: #6CA7CC;
+    border: solid transparent;
+    border-radius: 16px;
+    border-width: 0 0 4px;
+    box-sizing: border-box;
+    color: #FFFFFF;
+    cursor: pointer;
+    display: inline-block;
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: .8px;
+    line-height: 20px;
+    margin: 0;
+    outline: none;
+    overflow: visible;
+    padding: 13px 16px;
+    text-align: center;
+    touch-action: manipulation;
+    transform: translateZ(0);
+    transition: filter .2s;
+    user-select: none;
+    -webkit-user-select: none;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  
+  .button-19:after {
+    background-clip: padding-box;
+    background-color: #6CA7CC;
+    border: solid transparent;
+    border-radius: 16px;
+    border-width: 0 0 4px;
+    bottom: -4px;
+    content: "";
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    z-index: -1;
+  }
+  
+  .button-19,
+  .button-19:focus {
+    user-select: auto;
+  }
+  
+  .button-19:hover:not(:disabled) {
+    filter: brightness(1.1);
+    -webkit-filter: brightness(1.1);
+  }
+  
+  .button-19:disabled {
+    cursor: auto;
+  }
+  
+  .button-19:active {
+    border-width: 4px 0 0;
+    background: none;
+  }
+
+.pin {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto;
+}
+
+.input {
+    width: 40px;
+    height: 60px;
+    border: none;
+    border-bottom: 3px solid rgba(0, 0, 0, 0.5);
+    margin: 0 10px;
+    text-align: center;
+    font-size: 36px;
+    cursor: not-allowed;
+    pointer-events: none;
+    background-color: #AEDBF0;
+    border-radius: 16px;
+}
+
+.input:focus {
+    border-bottom: 3px solid #3F7EB3;
+    outline: none;
+}
+
+.input:nth-child(1) {
+    cursor: pointer;
+    pointer-events: all;
+}
+
