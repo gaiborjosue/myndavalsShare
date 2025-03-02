@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Photo App</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .screen {
+            display: none;
+        }
+        .active {
+            display: block;
+        }
+        button {
+            padding: 10px 15px;
+            margin: 10px 0;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        input {
+            padding: 10px;
+            margin: 10px 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .photo-item {
+            position: relative;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .photo-item img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+        }
+        .action-buttons {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px;
+        }
+        .action-button {
+            flex: 1;
+            margin: 0 2px;
+            font-size: 12px;
+        }
+        .favorite {
+            background-color: green;
+        }
+        .discard {
+            background-color: red;
+        }
+        .status {
+            padding: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .favorite-status {
+            background-color: rgba(0, 255, 0, 0.3);
+        }
+        .discard-status {
+            background-color: rgba(255, 0, 0, 0.3);
+        }
+        .side-by-side {
+            display: flex;
+            margin-top: 20px;
+        }
+        .side {
+            flex: 1;
+            margin: 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Home Screen -->
+    <div id="home-screen" class="screen active">
+        <h1>Simple Photo App</h1>
+        <div>
+            <h2>Upload Photos</h2>
+            <button id="upload-btn">Upload Photos</button>
+        </div>
+        <div>
+            <h2>Join Session</h2>
+            <input id="session-code-input" type="text" placeholder="Enter 4-digit code" maxlength="4">
+            <button id="join-session-btn">Join Session</button>
+        </div>
+    </div>
+
+    <!-- Upload Screen -->
+    <div id="upload-screen" class="screen">
+        <h1>Upload Photos</h1>
+        <form id="upload-form">
+            <input type="file" id="file-input" multiple accept="image/*">
+            <button type="submit">Upload</button>
+        </form>
+        <div id="upload-progress" style="display: none;">
+            <p>Uploading...</p>
+        </div>
+    </div>
+
+    <!-- Session Code Screen -->
+    <div id="session-code-screen" class="screen">
+        <h1>Share Your Photos</h1>
+        <div>
+            <h2>Your 4-digit code</h2>
+            <div id="session-code-display" style="font-size: 32px; text-align: center; margin: 20px 0;">0000</div>
+            <p>Share this code with a friend to let them select your photos.</p>
+            <div>
+                <p id="uploader-status">You are connected</p>
+                <p id="selector-status">Waiting for friend to join...</p>
+            </div>
+            <button id="view-results-btn" style="display: none;">View Results</button>
+        </div>
+    </div>
+
+    <!-- Selector Screen -->
+    <div id="selector-screen" class="screen">
+        <h1>Select Photos</h1>
+        <div id="photos-to-select" class="photo-grid"></div>
+    </div>
+
+    <!-- Results Screen -->
+    <div id="results-screen" class="screen">
+        <h1>Results</h1>
+        <div class="side-by-side">
+            <div class="side">
+                <h2>Favorites</h2>
+                <div id="favorites-container" class="photo-grid"></div>
+                <button id="download-favorites-btn">Download Favorites</button>
+            </div>
+            <div class="side">
+                <h2>Discarded</h2>
+                <div id="discarded-container" class="photo-grid"></div>
+            </div>
+        </div>
+        <button id="back-to-home-btn">Back to Home</button>
+    </div>
+
+    <script>
+        // Global variables
+        let socket;
+        let currentSessionCode = '';
+        let currentRole = '';
+        let currentFiles = [];
+        
+        // DOM elements
+        const screens = {
+            home: document.getElementById('home-screen'),
+            upload: document.getElementById('upload-screen'),
+            sessionCode: document.getElementById('session-code-screen'),
+            selector: document.getElementById('selector-screen'),
+            results: document.getElementById('results-screen')
+        };
+        
+        // Initialize socket connection
+        function initializeSocket() {
+            socket = io();
+            
+            socket.on('connect', () => {
+                console.log('Connected to server');
+            });
+            
+            socket.on('error', (data) => {
+                alert(data.message);
+            });
+            
+            socket.on('selector_joined', (data) => {
+                document.getElementById('selector-status').textContent = 'Friend is connected';
+                document.getElementById('view-results-btn').style.display = 'block';
+            });
+            
+            socket.on('session_update', (data) => {
+                currentFiles = data.files;
+                
+                if (currentRole === 'selector') {
+                    updateSelectorView();
+                } else if (currentRole === 'uploader' && screens.results.classList.contains('active')) {
+                    updateResultsView();
+                }
+            });
+            
+            socket.on('file_status_updated', (data) => {
+                // Update the status in our local files array
+                const file = currentFiles.find(f => f.id === data.file_id);
+                if (file) {
+                    file.status = data.status;
+                }
+                
+                if (currentRole === 'uploader') {
+                    updateResultsView();
+                }
+            });
+        }
+        
+        // Show a specific screen and hide others
+        function showScreen(screenToShow) {
+            Object.values(screens).forEach(screen => {
+                screen.classList.remove('active');
+            });
+            screenToShow.classList.add('active');
+        }
+        
+        // Upload photos
+        function uploadPhotos() {
+            const fileInput = document.getElementById('file-input');
+            const files = fileInput.files;
+            
+            if (files.length === 0) {
+                alert('Please select at least one photo to upload');
+                return;
+            }
+            
+            const formData = new FormData();
+            for (let i = 0; i < files.length; i++) {
+                formData.append('files', files[i]);
+            }
+            
+            // Show progress
+            document.getElementById('upload-progress').style.display = 'block';
+            document.getElementById('upload-form').style.display = 'none';
+            
+            fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Upload failed');
+                }
+                return response.json();
+            })
+            .then(data => {
+                currentSessionCode = data.session_code;
+                document.getElementById('session-code-display').textContent = currentSessionCode;
+                
+                // Join the session as uploader
+                joinSession(currentSessionCode, 'uploader');
+                
+                // Show session code screen
+                showScreen(screens.sessionCode);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Upload failed: ' + error.message);
+                
+                // Hide progress and show form again
+                document.getElementById('upload-progress').style.display = 'none';
+                document.getElementById('upload-form').style.display = 'block';
+            });
+        }
+        
+        // Join a session
+        function joinSession(sessionCode, role) {
+            currentSessionCode = sessionCode;
+            currentRole = role;
+            
+            fetch(`/api/session/${sessionCode}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Session not found');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Join the socket room
+                socket.emit('join_session', {
+                    session_code: sessionCode,
+                    role: role
+                });
+                
+                if (role === 'selector') {
+                    // Show selector screen (files will come from socket)
+                    showScreen(screens.selector);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to join session: ' + error.message);
+            });
+        }
+        
+        // Update the selector view
+        function updateSelectorView() {
+            const photosContainer = document.getElementById('photos-to-select');
+            photosContainer.innerHTML = '';
+            
+            // Filter undecided files
+            const undecidedFiles = currentFiles.filter(file => file.status === 'undecided');
+            
+            if (undecidedFiles.length === 0) {
+                photosContainer.innerHTML = '<p>No photos to select</p>';
+                return;
+            }
+            
+            undecidedFiles.forEach(file => {
+                const photoDiv = document.createElement('div');
+                photoDiv.classList.add('photo-item');
+                
+                // Use data_url if available, otherwise fallback to API endpoint
+                const imgSrc = file.data_url || `/api/images/${file.image_id}`;
+                
+                const img = document.createElement('img');
+                img.src = imgSrc;
+                img.alt = 'Photo';
+                
+                const actionButtons = document.createElement('div');
+                actionButtons.classList.add('action-buttons');
+                
+                const favoriteBtn = document.createElement('button');
+                favoriteBtn.classList.add('action-button', 'favorite');
+                favoriteBtn.textContent = 'Favorite';
+                favoriteBtn.onclick = () => updateFileStatus(file.id, 'favorite');
+                
+                const discardBtn = document.createElement('button');
+                discardBtn.classList.add('action-button', 'discard');
+                discardBtn.textContent = 'Discard';
+                discardBtn.onclick = () => updateFileStatus(file.id, 'discard');
+                
+                actionButtons.appendChild(favoriteBtn);
+                actionButtons.appendChild(discardBtn);
+                
+                photoDiv.appendChild(img);
+                photoDiv.appendChild(actionButtons);
+                
+                photosContainer.appendChild(photoDiv);
+            });
+        }
+        
+        // Update file status (favorite/discard)
+        function updateFileStatus(fileId, status) {
+            socket.emit('update_file_status', {
+                session_code: currentSessionCode,
+                file_id: fileId,
+                status: status
+            });
+            
+            // Update UI without waiting for server response
+            const file = currentFiles.find(f => f.id === fileId);
+            if (file) {
+                file.status = status;
+                updateSelectorView();
+            }
+        }
+        
+        // Update the results view
+        function updateResultsView() {
+            const favoritesContainer = document.getElementById('favorites-container');
+            const discardedContainer = document.getElementById('discarded-container');
+            
+            favoritesContainer.innerHTML = '';
+            discardedContainer.innerHTML = '';
+            
+            // Add favorite images
+            const favorites = currentFiles.filter(file => file.status === 'favorite');
+            favorites.forEach(file => {
+                const photoDiv = document.createElement('div');
+                photoDiv.classList.add('photo-item');
+                
+                // Use data_url if available, otherwise fallback to API endpoint
+                const imgSrc = file.data_url || `/api/images/${file.image_id}`;
+                
+                const img = document.createElement('img');
+                img.src = imgSrc;
+                img.alt = 'Favorite photo';
+                
+                const status = document.createElement('div');
+                status.classList.add('status', 'favorite-status');
+                status.textContent = 'Favorite';
+                
+                photoDiv.appendChild(img);
+                photoDiv.appendChild(status);
+                
+                favoritesContainer.appendChild(photoDiv);
+            });
+            
+            // Add discarded images
+            const discarded = currentFiles.filter(file => file.status === 'discard');
+            discarded.forEach(file => {
+                const photoDiv = document.createElement('div');
+                photoDiv.classList.add('photo-item');
+                
+                // Use data_url if available, otherwise fallback to API endpoint
+                const imgSrc = file.data_url || `/api/images/${file.image_id}`;
+                
+                const img = document.createElement('img');
+                img.src = imgSrc;
+                img.alt = 'Discarded photo';
+                
+                const status = document.createElement('div');
+                status.classList.add('status', 'discard-status');
+                status.textContent = 'Discard';
+                
+                photoDiv.appendChild(img);
+                photoDiv.appendChild(status);
+                
+                discardedContainer.appendChild(photoDiv);
+            });
+            
+            // Show/hide download button
+            document.getElementById('download-favorites-btn').style.display = 
+                favorites.length > 0 ? 'block' : 'none';
+        }
+        
+        // Download favorites as zip
+        function downloadFavorites() {
+            window.location.href = `/api/session/${currentSessionCode}/download_favorites`;
+        }
+        
+        // Reset app state
+        function resetApp() {
+            currentSessionCode = '';
+            currentRole = '';
+            currentFiles = [];
+            
+            // Reset form
+            document.getElementById('upload-form').style.display = 'block';
+            document.getElementById('upload-progress').style.display = 'none';
+            document.getElementById('file-input').value = '';
+            
+            // Reset session code input
+            document.getElementById('session-code-input').value = '';
+            
+            // Show home screen
+            showScreen(screens.home);
+        }
+        
+        // Initialize page
+        function initPage() {
+            // Initialize socket
+            initializeSocket();
+            
+            // Button event listeners
+            document.getElementById('upload-btn').addEventListener('click', () => {
+                showScreen(screens.upload);
+            });
+            
+            document.getElementById('join-session-btn').addEventListener('click', () => {
+                const code = document.getElementById('session-code-input').value.trim();
+                if (code.length === 4) {
+                    joinSession(code, 'selector');
+                } else {
+                    alert('Please enter a valid 4-digit code');
+                }
+            });
+            
+            document.getElementById('upload-form').addEventListener('submit', (e) => {
+                e.preventDefault();
+                uploadPhotos();
+            });
+            
+            document.getElementById('view-results-btn').addEventListener('click', () => {
+                showScreen(screens.results);
+                updateResultsView();
+            });
+            
+            document.getElementById('download-favorites-btn').addEventListener('click', () => {
+                downloadFavorites();
+            });
+            
+            document.getElementById('back-to-home-btn').addEventListener('click', () => {
+                resetApp();
+            });
+        }
+        
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', initPage);
+    </script>
+</body>
+</html>
