@@ -55,7 +55,6 @@ export function updateResultsView(favorites) {
       
       const status = document.createElement('div');
       status.classList.add('status', 'favorite-status');
-      status.textContent = 'Favorite';
       
       photoDiv.appendChild(img);
       photoDiv.appendChild(status);

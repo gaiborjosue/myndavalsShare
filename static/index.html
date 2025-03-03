@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Photo Selection App</title>
+    <title>Myndavals</title>
     <link rel="stylesheet" type="text/css" href="/static/css/styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js"></script>
@@ -11,6 +12,10 @@
     <script type="module" src="/static/js/script.js"></script>
 </head>
 <body>
+    <div>
+        
+        <h1 class="titlePage">MYNDAVALS &nbsp<i class="fa-solid fa-horse-head"></i></h1>
+    </div>
     <!-- Home Screen -->
     <div id="home-screen" class="screen active">
         <h2>
@@ -89,7 +94,7 @@
     <!-- Results Screen (Favorites Only) -->
     <div id="results-screen" class="screen">
         <div class="results-header">
-            <h1>Favorites</h1>
+            <h1>Favorites <i class="fa fa-heart"></i></h1>
             <div id="favorites-count" class="favorites-count">0 photos</div>
         </div>
         <div id="favorites-container" class="photo-grid"></div>
