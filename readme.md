@@ -1,5 +1,8 @@
 # Myndavals
 
+<img width="897" alt="Screenshot 2025-03-03 at 1 52 58 PM" src="https://github.com/user-attachments/assets/77197a94-09d5-4ed4-8045-2635dd296194" />
+
+
 ### [Visit the app here!](https://sharefavorites-billowing-darkness-1530.fly.dev/)
 
 Myndavals is a photo sharing application that allows users to upload photos, share them with friends, and get back their favorite selections. The app provides a seamless experience for sharing and selecting photos in a fun and interactive way.
