@@ -2,25 +2,68 @@
 import { setupPinInputs, getPin, resetPin } from './pin.js';
 import { initializeSocket, joinSession, updateFileStatus } from './socketManager.js';
 import { 
-    showScreen, updateSelectorView, updateResultsView, 
+    showScreen, updateResultsView, 
     setupFileInput, showUploadProgress, updateSessionCode,
     updateConnectionStatus, resetFileInput
 } from './uiManager.js';
 import { uploadPhotos, checkSession, downloadFavorites } from './apiClient.js';
+import { initTinder } from './tinder.js';
 
 // Global variables
 let currentSessionCode = '';
 let currentRole = '';
 let currentFiles = [];
+let tinderInstance = null;
 
 // Handle session updates from socket
 function handleSessionUpdate(data) {
     currentFiles = data.files;
     
     if (currentRole === 'selector') {
-        updateSelectorView(currentFiles, handleFileStatusChange);
-    } else if (currentRole === 'uploader' && document.getElementById('results-screen').classList.contains('active')) {
-        updateResultsView(currentFiles);
+        console.log('Selector received files:', currentFiles);
+        
+        // Filter only undecided files
+        const undecidedFiles = currentFiles.filter(file => file.status === 'undecided');
+        console.log('Undecided files:', undecidedFiles.length);
+        
+        // Make sure we're showing the selector screen
+        if (!document.getElementById('selector-screen').classList.contains('active')) {
+            showScreen('selector');
+        }
+        
+        // Update tinder view with undecided files
+        if (tinderInstance) {
+            tinderInstance.refresh(undecidedFiles);
+            
+            // Check if there are no more files to select
+            if (undecidedFiles.length === 0) {
+                // Show a message
+                const tinderCards = document.querySelector('.tinder--cards');
+                if (tinderCards) {
+                    tinderCards.innerHTML = '<div class="empty-message">No more photos to select</div>';
+                }
+            }
+        } else {
+            // If tinderInstance doesn't exist yet, create it
+            tinderInstance = initTinder(handleFavorite, handleDiscard);
+            tinderInstance.refresh(undecidedFiles);
+        }
+    } else if (currentRole === 'uploader') {
+        // Update results view with favorites
+        const favorites = currentFiles.filter(file => file.status === 'favorite');
+        
+        // Update favorites count
+        const favoritesCount = document.getElementById('favorites-count');
+        if (favoritesCount) {
+            favoritesCount.textContent = `${favorites.length} ${favorites.length === 1 ? 'photo' : 'photos'}`;
+        }
+        
+        // If selector is connected and we're in the session code screen, show results screen
+        if (data.selector_connected && document.getElementById('session-code-screen').classList.contains('active')) {
+            showScreen('results');
+        }
+        
+        updateResultsView(favorites);
     }
 }
 
@@ -33,24 +76,52 @@ function handleFileStatusUpdate(data) {
     }
     
     if (currentRole === 'uploader') {
-        updateResultsView(currentFiles);
+        // Only show favorites in results view
+        const favorites = currentFiles.filter(file => file.status === 'favorite');
+        
+        // Update favorites count
+        const favoritesCount = document.getElementById('favorites-count');
+        if (favoritesCount) {
+            favoritesCount.textContent = `${favorites.length} ${favorites.length === 1 ? 'photo' : 'photos'}`;
+        }
+        
+        updateResultsView(favorites);
     }
 }
 
 // Handle when a selector joins
 function handleSelectorJoined(data) {
     updateConnectionStatus(true);
+    
+    if (currentRole === 'uploader') {
+        // Show the results screen for the uploader
+        showScreen('results');
+        
+        // Only show favorites in results view
+        const favorites = currentFiles.filter(file => file.status === 'favorite');
+        updateResultsView(favorites);
+    }
 }
 
-// Handle file status change by the selector
-function handleFileStatusChange(fileId, status) {
-    updateFileStatus(currentSessionCode, fileId, status);
+// Handle favorite selection
+function handleFavorite(fileId) {
+    updateFileStatus(currentSessionCode, fileId, 'favorite');
     
     // Update UI without waiting for server response
     const file = currentFiles.find(f => f.id === fileId);
     if (file) {
-        file.status = status;
-        updateSelectorView(currentFiles, handleFileStatusChange);
+        file.status = 'favorite';
+    }
+}
+
+// Handle discard selection
+function handleDiscard(fileId) {
+    updateFileStatus(currentSessionCode, fileId, 'discard');
+    
+    // Update UI without waiting for server response
+    const file = currentFiles.find(f => f.id === fileId);
+    if (file) {
+        file.status = 'discard';
     }
 }
 
@@ -113,9 +184,23 @@ async function initiateSession(sessionCode, role) {
     // Join the socket session
     joinSession(sessionCode, role);
     
-    // Show appropriate screen
+    // Show appropriate screen based on role
     if (role === 'selector') {
+        // Make sure we show the selector screen first
         showScreen('selector');
+        
+        // Make sure the Tinder component is visible
+        const tinderComponent = document.querySelector('.tinder');
+        if (tinderComponent) {
+            tinderComponent.style.display = 'flex';
+        }
+        
+        // Initialize Tinder component
+        console.log('Initializing Tinder component for selector');
+        tinderInstance = initTinder(handleFavorite, handleDiscard);
+    } else if (role === 'uploader') {
+        // For uploader, show session code screen
+        showScreen('sessionCode');
     }
 }
 
@@ -124,6 +209,7 @@ function resetApp() {
     currentSessionCode = '';
     currentRole = '';
     currentFiles = [];
+    tinderInstance = null;
     
     // Reset UI elements
     resetFileInput();
@@ -154,16 +240,20 @@ function initApp() {
     
     document.getElementById('upload-form').addEventListener('submit', handleUpload);
     
-    document.getElementById('view-results-btn').addEventListener('click', () => {
-        showScreen('results');
-        updateResultsView(currentFiles);
-    });
-    
     document.getElementById('download-favorites-btn').addEventListener('click', () => {
         downloadFavorites(currentSessionCode);
     });
     
     document.getElementById('back-to-home-btn').addEventListener('click', resetApp);
+    
+    // Add close button functionality for tinder view
+    const closeButton = document.getElementById('close-tinder');
+    if (closeButton) {
+        closeButton.addEventListener('click', () => {
+            // Go back to home screen
+            resetApp();
+        });
+    }
 }
 
 // Initialize when the DOM is fully loaded

@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Photo Selection App</title>
-    <link rel="stylesheet" type="text/css" href="static/css/styles.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js"></script>
-    <script type="module" src="static/js/script.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script type="module" src="/static/js/script.js"></script>
 </head>
 <body>
     <!-- Home Screen -->
@@ -55,29 +57,37 @@
             <p id="uploader-status">You are connected</p>
             <p id="selector-status">Waiting for friend to join...</p>
         </div>
-        <button id="view-results-btn" class="button-19">View Results</button>
     </div>
 
-    <!-- Selector Screen -->
+    <!-- Selector Screen (Tinder Style) -->
     <div id="selector-screen" class="screen">
-        <h1>Select Your Favorite Photos</h1>
-        <div id="photos-to-select" class="photo-grid"></div>
-    </div>
-
-    <!-- Results Screen -->
-    <div id="results-screen" class="screen">
-        <h1>Selection Results</h1>
-        <div class="side-by-side">
-            <div class="side">
-                <h3>Favorites</h3>
-                <div id="favorites-container" class="photo-grid"></div>
-                <button id="download-favorites-btn" class="secondary-btn">Download Favorites</button>
+        <div class="tinder">
+            <div class="tinder-header">
+                <h1>Select Photos</h1>
             </div>
-            <div class="side">
-                <h3>Discarded</h3>
-                <div id="discarded-container" class="photo-grid"></div>
+            <button id="close-tinder" class="tinder-close"><i class="fa fa-times"></i></button>
+            <div class="tinder--status">
+                <i class="fa fa-remove"></i>
+                <i class="fa fa-heart"></i>
+            </div>
+            <div class="tinder--cards">
+                <!-- Cards will be added dynamically -->
+            </div>
+            <div class="tinder--buttons">
+                <button id="nope"><i class="fa fa-times"></i></button>
+                <button id="love"><i class="fa fa-heart"></i></button>
             </div>
         </div>
+    </div>
+
+    <!-- Results Screen (Favorites Only) -->
+    <div id="results-screen" class="screen">
+        <div class="results-header">
+            <h1>Favorites</h1>
+            <div id="favorites-count" class="favorites-count">0 photos</div>
+        </div>
+        <div id="favorites-container" class="photo-grid"></div>
+        <button id="download-favorites-btn" class="secondary-btn">Download Favorites</button>
         <button id="back-to-home-btn" class="button-19">Start New Session</button>
     </div>
 </body>

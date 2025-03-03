@@ -21,22 +21,28 @@ export function showScreen(screenName) {
   }
 }
 
-// Update the selector view with photos to choose from
-export function updateSelectorView(files, onFileStatusUpdate) {
-  const photosContainer = document.getElementById('photos-to-select');
-  if (!photosContainer) return;
+// Update the results view with favorite photos only
+export function updateResultsView(favorites) {
+  const favoritesContainer = document.getElementById('favorites-container');
   
-  photosContainer.innerHTML = '';
+  if (!favoritesContainer) return;
   
-  // Filter undecided files
-  const undecidedFiles = files.filter(file => file.status === 'undecided');
+  favoritesContainer.innerHTML = '';
   
-  if (undecidedFiles.length === 0) {
-      photosContainer.innerHTML = '<p style="text-align:center;">No photos to select</p>';
+  // If no favorites, show a message
+  if (favorites.length === 0) {
+      favoritesContainer.innerHTML = '<p style="text-align:center;">No favorites yet</p>';
+      
+      // Hide download button
+      const downloadBtn = document.getElementById('download-favorites-btn');
+      if (downloadBtn) {
+          downloadBtn.style.display = 'none';
+      }
       return;
   }
   
-  undecidedFiles.forEach(file => {
+  // Add favorite images
+  favorites.forEach(file => {
       const photoDiv = document.createElement('div');
       photoDiv.classList.add('photo-item');
       
@@ -45,99 +51,22 @@ export function updateSelectorView(files, onFileStatusUpdate) {
       
       const img = document.createElement('img');
       img.src = imgSrc;
-      img.alt = 'Photo';
+      img.alt = 'Favorite photo';
       
-      const actionButtons = document.createElement('div');
-      actionButtons.classList.add('action-buttons');
-      
-      const favoriteBtn = document.createElement('button');
-      favoriteBtn.classList.add('action-button', 'favorite');
-      favoriteBtn.textContent = 'Favorite';
-      favoriteBtn.onclick = () => onFileStatusUpdate(file.id, 'favorite');
-      
-      const discardBtn = document.createElement('button');
-      discardBtn.classList.add('action-button', 'discard');
-      discardBtn.textContent = 'Discard';
-      discardBtn.onclick = () => onFileStatusUpdate(file.id, 'discard');
-      
-      actionButtons.appendChild(favoriteBtn);
-      actionButtons.appendChild(discardBtn);
+      const status = document.createElement('div');
+      status.classList.add('status', 'favorite-status');
+      status.textContent = 'Favorite';
       
       photoDiv.appendChild(img);
-      photoDiv.appendChild(actionButtons);
+      photoDiv.appendChild(status);
       
-      photosContainer.appendChild(photoDiv);
+      favoritesContainer.appendChild(photoDiv);
   });
-}
-
-// Update the results view with favorite and discarded photos
-export function updateResultsView(files) {
-  const favoritesContainer = document.getElementById('favorites-container');
-  const discardedContainer = document.getElementById('discarded-container');
   
-  if (!favoritesContainer || !discardedContainer) return;
-  
-  favoritesContainer.innerHTML = '';
-  discardedContainer.innerHTML = '';
-  
-  // Add favorite images
-  const favorites = files.filter(file => file.status === 'favorite');
-  if (favorites.length === 0) {
-      favoritesContainer.innerHTML = '<p style="text-align:center;">No favorites yet</p>';
-  } else {
-      favorites.forEach(file => {
-          const photoDiv = document.createElement('div');
-          photoDiv.classList.add('photo-item');
-          
-          // Use data_url if available, otherwise fallback to API endpoint
-          const imgSrc = file.data_url || `/api/images/${file.image_id}`;
-          
-          const img = document.createElement('img');
-          img.src = imgSrc;
-          img.alt = 'Favorite photo';
-          
-          const status = document.createElement('div');
-          status.classList.add('status', 'favorite-status');
-          status.textContent = 'Favorite';
-          
-          photoDiv.appendChild(img);
-          photoDiv.appendChild(status);
-          
-          favoritesContainer.appendChild(photoDiv);
-      });
-  }
-  
-  // Add discarded images
-  const discarded = files.filter(file => file.status === 'discard');
-  if (discarded.length === 0) {
-      discardedContainer.innerHTML = '<p style="text-align:center;">No discards yet</p>';
-  } else {
-      discarded.forEach(file => {
-          const photoDiv = document.createElement('div');
-          photoDiv.classList.add('photo-item');
-          
-          // Use data_url if available, otherwise fallback to API endpoint
-          const imgSrc = file.data_url || `/api/images/${file.image_id}`;
-          
-          const img = document.createElement('img');
-          img.src = imgSrc;
-          img.alt = 'Discarded photo';
-          
-          const status = document.createElement('div');
-          status.classList.add('status', 'discard-status');
-          status.textContent = 'Discard';
-          
-          photoDiv.appendChild(img);
-          photoDiv.appendChild(status);
-          
-          discardedContainer.appendChild(photoDiv);
-      });
-  }
-  
-  // Show/hide download button
+  // Show download button
   const downloadBtn = document.getElementById('download-favorites-btn');
   if (downloadBtn) {
-      downloadBtn.style.display = favorites.length > 0 ? 'block' : 'none';
+      downloadBtn.style.display = 'block';
   }
 }
 
@@ -180,14 +109,9 @@ export function updateSessionCode(code) {
 // Update connection status
 export function updateConnectionStatus(selectorConnected) {
   const status = document.getElementById('selector-status');
-  const resultsBtn = document.getElementById('view-results-btn');
   
   if (status) {
       status.textContent = selectorConnected ? 'Friend is connected!' : 'Waiting for friend to join...';
-  }
-  
-  if (resultsBtn) {
-      resultsBtn.style.display = selectorConnected ? 'block' : 'none';
   }
 }
 
