@@ -36,16 +36,22 @@
 
     <!-- Upload Screen -->
     <div id="upload-screen" class="screen">
-        <h1>Upload Your Photos</h1>
-        <form id="upload-form">
-            <label for="file-input" class="file-input-label">Select Photos</label>
-            <input type="file" id="file-input" multiple accept="image/*">
-            <div id="selected-files-count" class="selected-files"></div>
-            <button type="submit" class="button-19">Upload</button>
-        </form>
-        <div id="upload-progress" style="display: none;">
-            <p>Uploading...</p>
-        </div>
+      <h1>Upload Your Photos</h1>
+      <form id="upload-form">
+          <div class="upload-container">
+              <label for="file-input" class="file-input-label-large">
+                  <i class="fa fa-camera"></i>
+                  Select Photos
+              </label>
+              <input type="file" id="file-input" multiple accept="image/*">
+              <div id="selected-files-count" class="selected-files"></div>
+              <button type="submit" class="upload-btn">Upload</button>
+          </div>
+      </form>
+      <div id="upload-progress" style="display: none;">
+          <div class="loader"></div>
+          <p>Uploading...</p>
+      </div>
     </div>
 
     <!-- Session Code Screen -->
