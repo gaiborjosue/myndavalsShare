@@ -303,4 +303,4 @@ def index():
     return app.send_static_file('index.html')
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True, host='0.0.0.0', port=5505)
+    socketio.run(app, debug=True, host='0.0.0.0', port=8080)
